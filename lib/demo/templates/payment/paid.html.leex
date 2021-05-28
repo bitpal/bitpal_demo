@@ -1,0 +1,13 @@
+<section>
+  <div class="icon-wrapper">
+    <%= svg_image("icon-check") %>
+  </div>
+
+  <div class="bottom-text">
+    <p>Your payment of <b><%= money_to_string(@invoice.amount) %></b> has been completed!</p>
+
+    <%= if @email && @email != "" do %>
+      <p>A verification email has been sent to <b><%= @email %></b>.</p>
+    <% end %>
+  </div>
+</section>

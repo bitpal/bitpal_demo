@@ -1,0 +1,16 @@
+<% src = "https://github.com/bitpal/bitpal_umbrella" %>
+<main role="main" class="main-wrapper">
+  <p class="alert alert-info" role="alert"
+    phx-click="lv:clear-flash"
+    phx-value-key="info"><%= live_flash(@flash, :info) %></p>
+
+  <p class="alert alert-danger" role="alert"
+    phx-click="lv:clear-flash"
+    phx-value-key="error"><%= live_flash(@flash, :error) %></p>
+
+  <%= @inner_content %>
+
+  <div class="floating-footer">
+    <%= link("Source code on GitHub.", to: src) %>
+  </div>
+</main>

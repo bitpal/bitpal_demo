@@ -1,0 +1,1 @@
+Your payment of <%= money_to_string(@amount) %> has been accepted! We live in eternal gratitude!

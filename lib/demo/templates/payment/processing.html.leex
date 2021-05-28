@@ -1,0 +1,10 @@
+<section>
+  <div class="icon-wrapper">
+    <%= svg_image("icon-refresh") %>
+  </div>
+  <div class="bottom-text">
+    <p>Transaction received! Waiting for additional confirmations...</p>
+
+    <p><%= @invoice.required_confirmations %></p>
+  </div>
+</section>

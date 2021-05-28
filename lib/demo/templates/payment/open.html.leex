@@ -1,0 +1,12 @@
+<section class="wait-for-tx">
+  <div class="please">
+    Please send <span class="amount"><%= money_to_string(@invoice.amount) %></span> to
+  </div>
+  <div class="qr"> 
+    <%= raw(render_qrcode(@invoice, background_color: "#F5F7FA", viewbox: false, width: 300)) %>
+  </div>
+  <div class="address">
+    <%= @invoice.address_id %>
+  </div>
+</section>
+

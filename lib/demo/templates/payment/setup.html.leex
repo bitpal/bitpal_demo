@@ -1,0 +1,35 @@
+<section class="setup">
+  <%= f = form_for @form, "#", [phx_change: "change", phx_submit: "submit", as: :setup] %>
+  <%= if @form.action == :setup do %>
+    <div class="alert alert-danger">
+      <p>Something's wrong! Please check the errors below.</p>
+    </div>
+  <% end %>
+    <div class="amount">
+      <div class="fiat">
+        <%= error_tag f, :amount %>
+        <span class="amount">
+          <% fiat = fiat_amount(assigns) %>
+          <%= if fiat && !Decimal.eq?(fiat, Decimal.new(0)) do %>
+            <%= fiat %> USD
+          <% end %>
+        </span>
+        <span class="exchange_rate">
+          <%= if @exchange_rate do %>
+            1 BCH = <%= @exchange_rate.rate %> USD
+          <% end %>
+        </span>
+      </div>
+      <div class="crypto">
+        <%= text_input f, :amount, placeholder: "Amount (BCH)", value: form_bch_amount_s(assigns) %>
+      </div>
+    </div>
+
+    <div class="email">
+      <%= error_tag f, :email %>
+      <%= email_input f, :email, placeholder: "Email (optional)" %>
+    </div>
+
+    <%= submit "Submit" %>
+  </form>
+</section>
