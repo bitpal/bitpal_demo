@@ -33,7 +33,7 @@ defmodule Demo.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:bitpal, path: "../bitpal"},
+      bitpal_dep(),
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:decimal, "~> 2.0"},
       {:floki, ">= 0.0.0"},
@@ -57,6 +57,16 @@ defmodule Demo.MixProject do
     ]
   end
 
+  defp bitpal_dep do
+    case System.get_env("BITPAL_DEP") do
+      nil ->
+        {:bitpal, git: "https://github.com/bitpal/bitpal"}
+
+      path ->
+        {:bitpal, path: path}
+    end
+  end
+
   # Aliases are shortcuts or tasks specific to the current project.
   # For example, to install project dependencies and perform other setup tasks, run:
   #
@@ -65,6 +75,7 @@ defmodule Demo.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
+      ci: ["demo.ci"],
       setup: ["deps.get", "cmd npm install --prefix assets", "ecto.setup"],
       "ecto.setup": ["ecto.create", "ecto.migrate"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
