@@ -6,12 +6,13 @@ defmodule Demo.PaymentLive do
   use Demo, :live_view
   alias BitPal
   alias BitPal.AddressEvents
+  alias BitPal.BlockchainEvents
   alias BitPal.ExchangeRate
+  alias BitPal.Invoices
   alias BitPalSchemas.Transaction
   require Logger
   import Ecto.Changeset
 
-  @required_confirmations 0
   @pair {:BCH, :USD}
 
   @impl true
@@ -72,24 +73,24 @@ defmodule Demo.PaymentLive do
   @impl true
   def handle_info({:invoice_status, status, invoice}, socket) do
     if status == :open do
-      # We want to track tx confirmations and stuff too
-      AddressEvents.subscribe(invoice.address_id)
+      # We want a live tracker for how many confirmations we're waiting for
+      AddressEvents.subscribe(invoice.currency_id)
+      BlockchainEvents.subscribe(invoice.currency_id)
     end
 
-    socket =
-      socket
-      |> assign(invoice: invoice)
-      |> assign(state: status)
+    socket
+    |> assign(invoice: invoice)
+    |> assign(state: status)
+    |> update_confirmations()
+  end
 
-    {:noreply, socket}
+  def handle_info({_, %Transaction{}}, socket) do
+    update_confirmations(socket)
   end
 
   @impl true
-  def handle_info({_, tx = %Transaction{}}, socket) do
-    {:noreply,
-     update(socket, :transactions, fn txs ->
-       Map.put(txs, tx.id, tx)
-     end)}
+  def handle_info({:new_block, _currency, _height}, socket) do
+    update_confirmations(socket)
   end
 
   @impl true
@@ -98,6 +99,13 @@ defmodule Demo.PaymentLive do
     ExchangeRate.unsubscribe(rate.pair)
 
     {:noreply, assign(socket, exchange_rate: rate)}
+  end
+
+  defp update_confirmations(socket) do
+    {:noreply,
+     assign(socket,
+       additional_confirmations: Invoices.confirmations_until_paid(socket.assigns.invoice)
+     )}
   end
 
   defp form_changeset(params \\ %{}) do
@@ -120,13 +128,11 @@ defmodule Demo.PaymentLive do
         params =
           params
           |> Map.update!(:amount, &Money.parse!(&1, :BCH))
-          |> Map.merge(%{
+          |> Map.put(
+            :exchange_rate,
             # If we haven't received an exchange rate, block until we have one.
-            exchange_rate:
-              Map.get(socket.assigns, :exchange_rate) || ExchangeRate.request!(@pair),
-            required_confirmations: @required_confirmations,
-            description: "Donation to BitPal"
-          })
+            Map.get(socket.assigns, :exchange_rate) || ExchangeRate.request!(@pair)
+          )
 
         {:ok, params}
 

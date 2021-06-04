@@ -3,8 +3,11 @@
     <%= svg_image("icon-refresh") %>
   </div>
   <div class="bottom-text">
-    <p>Transaction received! Waiting for additional confirmations...</p>
 
-    <p><%= @invoice.required_confirmations %></p>
+    <%= if @invoice.required_confirmations == 0 do %>
+      Transaction received! Verifying 0-conf security...
+    <% else %>
+      <p>Transaction received! Waiting for <b><%= @additional_confirmations %></b> additional confirmations...</p>
+    <% end %>
   </div>
 </section>

@@ -22,6 +22,7 @@ defmodule Demo do
       use Phoenix.Controller, namespace: Demo
 
       import Plug.Conn
+      import Demo.Gettext
       alias Demo.Router.Helpers, as: Routes
     end
   end
@@ -71,6 +72,7 @@ defmodule Demo do
   def channel do
     quote do
       use Phoenix.Channel
+      import Demo.Gettext
     end
   end
 
@@ -86,9 +88,11 @@ defmodule Demo do
       import Phoenix.View
 
       import Demo.ErrorHelpers
+      import Demo.Gettext
       alias Demo.Router.Helpers, as: Routes
 
       import BitPal.ViewHelpers
+      alias BitPal.Invoices
 
       use PhoenixInlineSvg.Helpers
     end
