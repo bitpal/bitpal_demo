@@ -28,6 +28,18 @@ case Config.config_env() do
       secret_key_base: secret_key_base,
       force_ssl: [hsts: true]
 
+    database_url =
+      System.get_env("DATABASE_URL") ||
+        raise """
+        environment variable DATABASE_URL is missing.
+        For example: ecto://USER:PASS@HOST/DATABASE
+        """
+
+    config :bitpal, BitPal.Repo,
+      # ssl: true,
+      url: database_url,
+      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10")
+
     # Configure Swoosh for mailing
     config :demo, Demo.Mailer,
       adapter: Swoosh.Adapters.SMTP,
