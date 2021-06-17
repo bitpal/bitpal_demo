@@ -33,7 +33,7 @@ defmodule Demo.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      bitpal_dep(),
+      {:bitpal, git: "https://github.com/bitpal/bitpal"},
       {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:decimal, "~> 2.0"},
       {:floki, ">= 0.0.0"},
@@ -55,16 +55,6 @@ defmodule Demo.MixProject do
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 0.4"}
     ]
-  end
-
-  defp bitpal_dep do
-    case System.get_env("BITPAL_DEP") do
-      nil ->
-        {:bitpal, git: "https://github.com/bitpal/bitpal"}
-
-      path ->
-        {:bitpal, path: path}
-    end
   end
 
   # Aliases are shortcuts or tasks specific to the current project.

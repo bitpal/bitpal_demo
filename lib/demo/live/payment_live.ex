@@ -9,7 +9,6 @@ defmodule Demo.PaymentLive do
   alias BitPal.BlockchainEvents
   alias BitPal.ExchangeRate
   alias BitPal.Invoices
-  alias BitPalSchemas.Transaction
   require Logger
   import Ecto.Changeset
 
@@ -84,9 +83,10 @@ defmodule Demo.PaymentLive do
     |> update_confirmations()
   end
 
-  def handle_info({_, %Transaction{}}, socket) do
-    update_confirmations(socket)
-  end
+  def handle_info({:tx_seen, _txid}, socket), do: update_confirmations(socket)
+  def handle_info({:tx_confirmed, _txid}, socket), do: update_confirmations(socket)
+  def handle_info({:tx_double_spent, _txid}, socket), do: update_confirmations(socket)
+  def handle_info({:tx_reversed, _txid}, socket), do: update_confirmations(socket)
 
   @impl true
   def handle_info({:new_block, _currency, _height}, socket) do

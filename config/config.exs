@@ -7,6 +7,12 @@
 # General application configuration
 use Mix.Config
 
+config :bitpal,
+  xpub:
+    "xpub6DWyFPVAuvsno6PmiQq5Rrbw3Hb5fvD8EVSVGimu1koSuQc4HEmanCGVjc6GMxWpj2JsafJ4Rdbq2EwtprRxr6B9PxozpaoEDg6z168NYT1",
+  recipent_description: "BitPal Demo",
+  required_confirmations: 0
+
 # Configures the endpoint
 config :demo, Demo.Endpoint,
   url: [host: "localhost"],
