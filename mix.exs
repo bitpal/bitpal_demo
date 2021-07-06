@@ -33,8 +33,6 @@ defmodule Demo.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:bitpal, git: "https://github.com/bitpal/bitpal"},
-      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
       {:decimal, "~> 2.0"},
       {:floki, ">= 0.0.0"},
       {:gen_smtp, "~> 0.13"},
@@ -53,7 +51,19 @@ defmodule Demo.MixProject do
       {:plug_cowboy, "~> 2.4.1"},
       {:swoosh, "~> 1.0"},
       {:telemetry_metrics, "~> 0.6"},
-      {:telemetry_poller, "~> 0.4"}
+      {:telemetry_poller, "~> 0.4"},
+      {:phoenix_client, "~> 0.3"},
+      {:money, "~> 1.8"},
+      {:eqrcode, "~> 0.1.7"},
+      {:httpoison, "~> 1.7"},
+      {:poison, "~> 4.0"},
+      {:con_cache, "~> 1.0"},
+
+      # CI and tests
+      {:ci, "~> 0.1.0", only: [:dev, :test]},
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.8", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -66,10 +76,7 @@ defmodule Demo.MixProject do
   defp aliases do
     [
       ci: ["demo.ci"],
-      setup: ["deps.get", "cmd npm install --prefix assets", "ecto.setup"],
-      "ecto.setup": ["ecto.create", "ecto.migrate"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"]
+      setup: ["deps.get", "cmd npm install --prefix assets"]
     ]
   end
 end

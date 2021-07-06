@@ -3,6 +3,8 @@ defmodule Demo.Mailer do
   use Swoosh.Mailer, otp_app: :demo
   require Logger
 
+  def thank_you_email(nil, _invoice), do: nil
+
   def thank_you_email(email, invoice) do
     Logger.info("Thanking #{inspect(email)}!")
 

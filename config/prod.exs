@@ -1,7 +1,4 @@
-use Mix.Config
-
-config :bitpal, backends: [BitPal.Backend.Flowee]
-config :bitpal, BitPal.ExchangeRate, backends: [BitPal.ExchangeRate.Kraken]
+import Config
 
 # Note we also include the path to a cache manifest
 # containing the digested version of static files. This

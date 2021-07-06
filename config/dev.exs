@@ -1,17 +1,4 @@
-use Mix.Config
-
-# Mocking during development. If you want to test live replace it with a backend of your choice.
-config :bitpal, backends: [{BitPal.BackendMock, auto: true}]
-# config :bitpal, backends: [BitPal.Backend.Flowee]
-config :bitpal, BitPal.ExchangeRate, backends: [BitPal.ExchangeRateMock]
-
-config :bitpal, BitPal.Repo,
-  username: "postgres",
-  password: "postgres",
-  database: "bitpal_demo_dev",
-  hostname: "localhost",
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+import Config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -20,7 +7,7 @@ config :bitpal, BitPal.Repo,
 # watchers to your application. For example, we use it
 # with webpack to recompile .js and .css sources.
 config :demo, Demo.Endpoint,
-  http: [port: 4000],
+  http: [port: 4400],
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
@@ -77,3 +64,9 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Run a preview email server during dev
+config :demo, Demo.Mailer, adapter: Swoosh.Adapters.Local
+config :swoosh, serve_mailbox: true, preview_port: 4011
+
+config :logger, level: :debug

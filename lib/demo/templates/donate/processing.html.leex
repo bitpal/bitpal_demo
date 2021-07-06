@@ -4,10 +4,10 @@
   </div>
   <div class="bottom-text">
 
-    <%= if @invoice.required_confirmations == 0 do %>
+    <%= if @invoice.reason == "verifying" do %>
       Transaction received! Verifying 0-conf security...
     <% else %>
-      <p>Transaction received! Waiting for <b><%= @additional_confirmations %></b> additional confirmations...</p>
+      <p>Transaction received! Waiting for <b><%= @invoice.confirmations_due %></b> additional confirmations...</p>
     <% end %>
   </div>
 </section>

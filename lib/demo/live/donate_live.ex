@@ -1,22 +1,35 @@
-defmodule Demo.PaymentLive do
+defmodule Demo.DonateLive do
   @moduledoc """
-  Logic for acceptong a payment using the BitPal library, using Phoenix LiveView.
+  Handles user specified donation amounts
   """
 
   use Demo, :live_view
-  alias BitPal
-  alias BitPal.AddressEvents
-  alias BitPal.BlockchainEvents
-  alias BitPal.ExchangeRate
-  alias BitPal.Invoices
+  alias BitPalPhx.Cache
+  alias BitPalPhx.ExchangeRates
+  alias BitPalPhx.Invoice
+  alias BitPalPhx.Invoices
   require Logger
   import Ecto.Changeset
 
-  @pair {:BCH, :USD}
+  @pair {"BCH", "USD"}
+
+  @impl true
+  def mount(%{"id" => invoice_id}, _session, socket) do
+    Logger.info("setting up invoice #{invoice_id}")
+
+    {:ok,
+     assign(socket,
+       state: :setup,
+       exchange_rate: nil,
+       form: form_changeset()
+     )}
+  end
 
   @impl true
   def mount(_params, _session, socket) do
-    ExchangeRate.subscribe(@pair)
+    if connected?(socket) do
+      ExchangeRates.subscribe(@pair)
+    end
 
     {:ok,
      assign(socket,
@@ -30,7 +43,7 @@ defmodule Demo.PaymentLive do
   def render(assigns = %{state: state}) do
     # Dynamically figure out which template to render depending on the current state we're in.
     template = Atom.to_string(state) <> ".html"
-    render_existing(Demo.PaymentView, template, assigns)
+    render_existing(Demo.DonateView, template, assigns)
   end
 
   @impl true
@@ -38,10 +51,20 @@ defmodule Demo.PaymentLive do
     # Leverage Phoenix LiveView for form validation.
     case register_params(form, socket) do
       {:ok, params} ->
-        # Initialize an invoice, callbacks goes to 'handle_info'.
-        case BitPal.register_and_finalize(params) do
-          {:ok, _} ->
-            {:noreply, assign(socket, transactions: %{}, email: params[:email])}
+        case Invoices.create(params, finalize: true) do
+          {:ok, invoice} ->
+            # Store the invoice in the cache, and then retrieve it after patch when params are setup.
+            Cache.put(invoice.id, invoice)
+            Cache.put({:email, invoice.id}, params[:email])
+
+            socket =
+              socket
+              |> push_patch(
+                to: Routes.donate_path(socket, :invoice, invoice.id),
+                replace: true
+              )
+
+            {:noreply, socket}
 
           {:error, changeset} ->
             {:noreply, assign(socket, form: changeset)}
@@ -61,51 +84,68 @@ defmodule Demo.PaymentLive do
   end
 
   @impl true
-  def handle_info({:invoice_status, :paid, invoice}, socket) do
-    if email = Map.get(socket.assigns, :email) do
-      Demo.Mailer.thank_you_email(email, invoice)
-    end
+  def handle_params(%{"id" => invoice_id}, _uri, socket) do
+    socket = assign(socket, email: Cache.get({:email, invoice_id}))
 
-    {:noreply, assign(socket, state: :paid)}
+    case retrieve_invoice(invoice_id) do
+      {:ok, invoice} ->
+        Invoices.subscribe(invoice_id)
+        {:noreply, assign(socket, invoice: invoice, state: invoice.status)}
+
+      {:error, _} ->
+        Logger.warn("unknown invoice: #{invoice_id}")
+
+        socket =
+          socket
+          |> push_patch(
+            to: Routes.donate_path(socket, :setup),
+            replace: true
+          )
+
+        {:noreply, socket}
+    end
   end
 
   @impl true
-  def handle_info({:invoice_status, status, invoice}, socket) do
-    if status == :open do
-      # We want a live tracker for how many confirmations we're waiting for
-      AddressEvents.subscribe(invoice.currency_id)
-      BlockchainEvents.subscribe(invoice.currency_id)
-    end
-
-    socket
-    |> assign(invoice: invoice)
-    |> assign(state: status)
-    |> update_confirmations()
+  def handle_params(_, _uri, socket) do
+    {:noreply, socket}
   end
 
-  def handle_info({:tx_seen, _txid}, socket), do: update_confirmations(socket)
-  def handle_info({:tx_confirmed, _txid}, socket), do: update_confirmations(socket)
-  def handle_info({:tx_double_spent, _txid}, socket), do: update_confirmations(socket)
-  def handle_info({:tx_reversed, _txid}, socket), do: update_confirmations(socket)
-
-  @impl true
-  def handle_info({:new_block, _currency, _height}, socket) do
-    update_confirmations(socket)
+  defp retrieve_invoice(invoice_id) do
+    if invoice = Cache.get(invoice_id) do
+      # Delete the temporary cache as it might get out of sync. It's just a workaround for
+      # push_path removing socket assign.
+      Cache.delete(invoice_id)
+      {:ok, invoice}
+    else
+      Invoices.fetch(invoice_id)
+    end
   end
 
   @impl true
   def handle_info({:exchange_rate, rate}, socket) do
     # We only update our exchange rate once, so it doesn't change during a connection.
-    ExchangeRate.unsubscribe(rate.pair)
-
+    ExchangeRates.unsubscribe(rate.pair)
     {:noreply, assign(socket, exchange_rate: rate)}
   end
 
-  defp update_confirmations(socket) do
-    {:noreply,
-     assign(socket,
-       additional_confirmations: Invoices.confirmations_until_paid(socket.assigns.invoice)
-     )}
+  @impl true
+  def handle_info({:invoice, event, params}, socket) do
+    Logger.debug("#{event}: #{inspect(params)}")
+
+    case socket.assigns[:invoice] do
+      invoice = %Invoice{} ->
+        invoice = Invoice.merge!(invoice, params)
+
+        if event == :paid do
+          Demo.Mailer.thank_you_email(socket.assigns[:email], invoice)
+        end
+
+        {:noreply, assign(socket, invoice: invoice, state: invoice.status)}
+
+      nil ->
+        {:noreply, socket}
+    end
   end
 
   defp form_changeset(params \\ %{}) do
@@ -131,7 +171,7 @@ defmodule Demo.PaymentLive do
           |> Map.put(
             :exchange_rate,
             # If we haven't received an exchange rate, block until we have one.
-            Map.get(socket.assigns, :exchange_rate) || ExchangeRate.request!(@pair)
+            socket.assigns[:exchange_rate] || ExchangeRates.request!(@pair)
           )
 
         {:ok, params}

@@ -6,7 +6,15 @@ defmodule Demo.Application do
   use Application
 
   def start(_type, _args) do
+    socket_opts = [
+      url: "ws://0.0.0.0:4001/socket/websocket"
+    ]
+
     children = [
+      {PhoenixClient.Socket, {socket_opts, name: BitPalPhx.Socket}},
+      BitPalPhx.Cache,
+      BitPalPhx.ExchangeRates,
+      BitPalPhx.Invoices,
       Demo.Endpoint,
       {Phoenix.PubSub, name: Demo.PubSub}
     ]
