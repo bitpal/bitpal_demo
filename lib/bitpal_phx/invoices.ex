@@ -22,6 +22,7 @@ defmodule BitPalPhx.Invoices do
           %{
             amount: Money.t(),
             exchange_rate: %{rate: Decimal.t(), pair: {atom, atom}},
+            email: String.t(),
             finalize: boolean
           },
           keyword
@@ -29,7 +30,8 @@ defmodule BitPalPhx.Invoices do
   def create(
         %{
           amount: amount,
-          exchange_rate: %{rate: rate, pair: {currency, fiat_currency}}
+          exchange_rate: %{rate: rate, pair: {currency, fiat_currency}},
+          email: email
         },
         opts \\ []
       ) do
@@ -37,7 +39,7 @@ defmodule BitPalPhx.Invoices do
 
     http = Application.get_env(:demo, :http_client)
     token = Application.fetch_env!(:demo, :access_token)
-    uri = Application.fetch_env!(:demo, :server_endpoint)
+    uri = Application.fetch_env!(:demo, :rest_endpoint)
 
     %{body: body, status_code: status_code} =
       http.post!(
@@ -48,6 +50,7 @@ defmodule BitPalPhx.Invoices do
           exchange_rate: rate,
           fiat_currency: fiat_currency,
           required_confirmations: Application.get_env(:demo, :required_confirmations, 0),
+          email: email,
           finalize: finalize
         }),
         [

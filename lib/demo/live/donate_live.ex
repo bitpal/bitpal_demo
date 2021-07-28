@@ -60,7 +60,6 @@ defmodule Demo.DonateLive do
           {:ok, invoice} ->
             # Store the invoice in the cache, and then retrieve it after patch when params are setup.
             Cache.put(invoice.id, invoice)
-            Cache.put({:email, invoice.id}, params[:email])
 
             socket =
               socket
@@ -90,8 +89,6 @@ defmodule Demo.DonateLive do
 
   @impl true
   def handle_params(%{"id" => invoice_id}, _uri, socket) do
-    socket = assign(socket, email: Cache.get({:email, invoice_id}))
-
     case retrieve_invoice(invoice_id) do
       {:ok, invoice} ->
         Invoices.subscribe(invoice_id)
@@ -142,7 +139,7 @@ defmodule Demo.DonateLive do
         invoice = Invoice.merge!(invoice, params)
 
         if event == :paid do
-          Demo.Mailer.thank_you_email(socket.assigns[:email], invoice)
+          Demo.Mailer.thank_you_email(invoice)
         end
 
         {:noreply, assign(socket, invoice: invoice, state: invoice.status)}

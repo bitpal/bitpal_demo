@@ -60,7 +60,8 @@ defmodule Demo.DonateLiveTest do
             "currency" => "BCH",
             "fiat_amount" => "2.6",
             "fiat_currency" => "USD",
-            "status" => "open"
+            "status" => "open",
+            "email" => "test@bitpal.dev"
           }),
         status_code: 200
       }
@@ -96,6 +97,7 @@ defmodule Demo.DonateLiveTest do
     )
 
     assert render_eventually(view, "Your payment of <b>#{amount} BCH</b> has been completed!")
+    assert render(view) =~ "A verification email has been sent to <b>test@bitpal.dev</b>"
 
     assert_email_sent()
   end
@@ -181,7 +183,6 @@ defmodule Demo.DonateLiveTest do
     )
 
     assert render_eventually(view, "Your payment of <b>#{amount} BCH</b> has been completed!")
-
-    assert_email_sent()
+    assert !(render(view) =~ "A verification email has been sent")
   end
 end

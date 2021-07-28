@@ -1,15 +1,16 @@
 defmodule Demo.Mailer do
   @moduledoc false
   use Swoosh.Mailer, otp_app: :demo
+  alias BitPalPhx.Invoice
   require Logger
 
-  def thank_you_email(nil, _invoice), do: nil
+  def thank_you_email(%Invoice{email: nil}), do: nil
 
-  def thank_you_email(email, invoice) do
-    Logger.info("Thanking #{inspect(email)}!")
+  def thank_you_email(invoice) do
+    Logger.info("Thanking #{invoice.email}!")
 
     Task.start(fn ->
-      %{email: email, amount: invoice.amount}
+      %{email: invoice.email, amount: invoice.amount}
       |> Demo.AcceptedEmail.new()
       |> Demo.Mailer.deliver()
     end)

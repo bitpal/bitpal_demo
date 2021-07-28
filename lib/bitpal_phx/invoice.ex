@@ -15,6 +15,9 @@ defmodule BitPalPhx.Invoice do
           status: status,
           reason: String.t() | nil,
           confirmations_due: non_neg_integer | nil,
+          email: String.t() | nil,
+          description: String.t() | nil,
+          pos_data: map | nil,
           txs: [Transaction.t()]
         }
 
@@ -27,6 +30,9 @@ defmodule BitPalPhx.Invoice do
     :status,
     :reason,
     :confirmations_due,
+    :email,
+    :description,
+    :pos_data,
     :txs
   ]
 
@@ -64,6 +70,9 @@ defmodule BitPalPhx.Invoice do
       amount: :string,
       fiat_amount: :string,
       exchange_rate: :any,
+      email: :string,
+      description: :string,
+      pos_data: %{},
       txs: :any
     }
 
