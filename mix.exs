@@ -52,12 +52,12 @@ defmodule Demo.MixProject do
       {:swoosh, "~> 1.0"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 0.4"},
-      {:phoenix_client, "~> 0.3"},
       {:money, "~> 1.8"},
       {:eqrcode, "~> 0.1.7"},
       {:httpoison, "~> 1.7"},
       {:poison, "~> 4.0"},
       {:con_cache, "~> 1.0"},
+      {:slipstream, "~> 0.8"},
 
       # CI and tests
       {:ci, "~> 0.1.0", only: [:dev, :test]},

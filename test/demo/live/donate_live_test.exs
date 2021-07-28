@@ -3,18 +3,18 @@ defmodule Demo.DonateLiveTest do
   import Phoenix.LiveViewTest
   import Mox
   import Swoosh.TestAssertions
-  alias BitPalPhx.ExchangeRates
-  alias BitPalPhx.Invoices
-  alias PhoenixClient.Message
+  alias BitPalPhx.Socket
 
   @http_client BitPalPhx.HTTPMock
+  @socket_client BitPalPhx.SocketMock
 
   setup :verify_on_exit!
   setup :set_swoosh_global
+  setup :set_mox_global
 
-  defp broadcast(module, event, payload, topic) do
-    pid = GenServer.whereis(module)
-    send(pid, %Message{event: event, payload: payload, topic: topic})
+  setup do
+    stub(@socket_client, :join, fn _channel -> :ok end)
+    :ok
   end
 
   defp eventually(func) do
@@ -31,18 +31,23 @@ defmodule Demo.DonateLiveTest do
   end
 
   test "successful 0-conf payment", %{conn: conn} do
-    {:ok, view, setup} = live(conn, "/")
-
-    assert setup =~ "Amount (BCH)"
-
     id = "my-id"
     rate = "2"
     amount = "1.3"
     address = "some-address"
     invoice_topic = "invoice:#{id}"
 
-    broadcast(ExchangeRates, "rate", %{"rate" => rate, "pair" => "BCH-USD"}, "not-used")
+    expect(@socket_client, :push, fn "exchange_rate:BCH-USD", "rate", %{from: "BCH", to: "USD"} ->
+      {:ok, "rate-ref"}
+    end)
 
+    expect(@socket_client, :await, fn "rate-ref" ->
+      {:ok, %{"rate" => rate, "pair" => "BCH-USD"}}
+    end)
+
+    {:ok, view, setup} = live(conn, "/")
+
+    assert setup =~ "Amount (BCH)"
     assert render_eventually(view, "1 BCH = #{rate} USD")
 
     expect(@http_client, :post!, fn _url, _params, _headers ->
@@ -68,28 +73,26 @@ defmodule Demo.DonateLiveTest do
 
     wait_for_tx =~ address
 
-    broadcast(
-      Invoices,
+    Socket.handle_message(
+      invoice_topic,
       "processing",
       %{
         "id" => id,
         "status" => "processing",
         "reason" => "verifying",
         "txs" => [%{"txid" => "tx0", "amount" => amount}]
-      },
-      invoice_topic
+      }
     )
 
     assert render_eventually(view, "Verifying 0-conf security")
 
-    broadcast(
-      Invoices,
+    Socket.handle_message(
+      invoice_topic,
       "paid",
       %{
         "id" => id,
         "status" => "paid"
-      },
-      invoice_topic
+      }
     )
 
     assert render_eventually(view, "Your payment of <b>#{amount} BCH</b> has been completed!")
@@ -97,20 +100,24 @@ defmodule Demo.DonateLiveTest do
     assert_email_sent()
   end
 
-  @tag do: true
   test "successful 2-conf payment", %{conn: conn} do
-    {:ok, view, setup} = live(conn, "/")
-
-    assert setup =~ "Amount (BCH)"
-
     id = "my-id"
     rate = "2"
     amount = "1.3"
     address = "some-address"
     invoice_topic = "invoice:#{id}"
 
-    broadcast(ExchangeRates, "rate", %{"rate" => rate, "pair" => "BCH-USD"}, "not-used")
+    expect(@socket_client, :push, fn "exchange_rate:BCH-USD", "rate", %{from: "BCH", to: "USD"} ->
+      {:ok, "rate-ref"}
+    end)
 
+    expect(@socket_client, :await, fn "rate-ref" ->
+      {:ok, %{"rate" => rate, "pair" => "BCH-USD"}}
+    end)
+
+    {:ok, view, setup} = live(conn, "/")
+
+    assert setup =~ "Amount (BCH)"
     assert render_eventually(view, "1 BCH = #{rate} USD")
 
     expect(@http_client, :post!, fn _url, _params, _headers ->
@@ -136,8 +143,8 @@ defmodule Demo.DonateLiveTest do
 
     wait_for_tx =~ address
 
-    broadcast(
-      Invoices,
+    Socket.handle_message(
+      invoice_topic,
       "processing",
       %{
         "id" => id,
@@ -145,14 +152,13 @@ defmodule Demo.DonateLiveTest do
         "reason" => "confirming",
         "confirmations_due" => "2",
         "txs" => [%{"txid" => "tx0", "amount" => amount}]
-      },
-      invoice_topic
+      }
     )
 
     assert render_eventually(view, "Waiting for <b>2</b> additional confirmations")
 
-    broadcast(
-      Invoices,
+    Socket.handle_message(
+      invoice_topic,
       "processing",
       %{
         "id" => id,
@@ -160,20 +166,18 @@ defmodule Demo.DonateLiveTest do
         "reason" => "confirming",
         "confirmations_due" => "1",
         "txs" => [%{"txid" => "tx0", "amount" => amount}]
-      },
-      invoice_topic
+      }
     )
 
     assert render_eventually(view, "Waiting for <b>1</b> additional confirmations")
 
-    broadcast(
-      Invoices,
+    Socket.handle_message(
+      invoice_topic,
       "paid",
       %{
         "id" => id,
         "status" => "paid"
-      },
-      invoice_topic
+      }
     )
 
     assert render_eventually(view, "Your payment of <b>#{amount} BCH</b> has been completed!")

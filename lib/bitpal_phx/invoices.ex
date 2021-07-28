@@ -2,12 +2,11 @@ defmodule BitPalPhx.Invoices do
   @moduledoc false
   use GenServer
   import Ecto.Changeset
-  alias BitPalPhx.Channels
   alias BitPalPhx.Invoice
+  alias BitPalPhx.Socket
   alias BitPalPhx.Transaction
   alias Ecto.Changeset
   alias Phoenix.PubSub
-  alias PhoenixClient.Message
   require Logger
 
   @pubsub Demo.PubSub
@@ -37,21 +36,23 @@ defmodule BitPalPhx.Invoices do
     finalize = Keyword.get(opts, :finalize, false)
 
     http = Application.get_env(:demo, :http_client)
+    token = Application.fetch_env!(:demo, :access_token)
+    uri = Application.fetch_env!(:demo, :server_endpoint)
 
     %{body: body, status_code: status_code} =
       http.post!(
-        "http://0.0.0.0:4001/v1/invoices",
+        "#{uri}/v1/invoices",
         encode!(%{
           amount: Money.to_decimal(amount),
           currency: currency,
           exchange_rate: rate,
           fiat_currency: fiat_currency,
-          required_confirmations: 2,
+          required_confirmations: Application.get_env(:demo, :required_confirmations, 0),
           finalize: finalize
         }),
         [
           {"content-type", "application/json"},
-          {"Authorization", Plug.BasicAuth.encode_basic_auth("user", "")}
+          {"Authorization", Plug.BasicAuth.encode_basic_auth(token, "")}
         ]
       )
 
@@ -84,52 +85,37 @@ defmodule BitPalPhx.Invoices do
 
   @impl true
   def handle_call({:join, invoice_id}, _from, state) do
-    {:ok, _channel} = Channels.join(topic(invoice_id))
+    :ok = Socket.join(topic(invoice_id))
     {:reply, :ok, state}
   end
 
-  @impl true
-  def handle_info(msg = %Message{event: "processing"}, state) do
-    process_info(:processing, msg, [:id, :status, :reason, :txs])
-    {:noreply, state}
+  def handle_message(topic, "processing", msg) do
+    process_info(:processing, topic, msg, [:id, :status, :reason, :txs])
   end
 
-  @impl true
-  def handle_info(msg = %Message{event: "uncollectible"}, state) do
-    process_info(:uncollectible, msg, [:id, :status, :reason])
-    {:noreply, state}
+  def handle_message(topic, "uncollectible", msg) do
+    process_info(:uncollectible, topic, msg, [:id, :status, :reason])
   end
 
-  @impl true
-  def handle_info(msg = %Message{event: "underpaid"}, state) do
-    process_info(:underpaid, msg, [:id, :status, :amount_due, :txs])
-    {:noreply, state}
+  def handle_message(topic, "underpaid", msg) do
+    process_info(:underpaid, topic, msg, [:id, :status, :amount_due, :txs])
   end
 
-  @impl true
-  def handle_info(msg = %Message{event: "overpaid"}, state) do
-    process_info(:overpaid, msg, [:id, :status, :overpaid_amount, :txs])
-    {:noreply, state}
+  def handle_message(topic, "overpaid", msg) do
+    process_info(:overpaid, topic, msg, [:id, :status, :overpaid_amount, :txs])
   end
 
-  @impl true
-  def handle_info(msg = %Message{event: "paid"}, state) do
-    process_info(:paid, msg, [:id, :status])
-    {:noreply, state}
+  def handle_message(topic, "paid", msg) do
+    process_info(:paid, topic, msg, [:id, :status])
   end
 
-  # voided
-  # deleted
-  # finalized
-
-  @impl true
-  def handle_info(%Message{event: event, payload: params}, state) do
-    Logger.warn("unknown event: #{event} #{inspect(params)}")
-    {:noreply, state}
+  def handle_message(_topic, event, message) do
+    # NOTE we ignore voided, deleted and finalized messages which aren't relevant to this use-case.
+    Logger.warn("unknown invoice event: #{event} #{inspect(message)}")
   end
 
-  defp process_info(event, %Message{payload: params, topic: topic}, required) do
-    case cast_general(params, required) do
+  defp process_info(event, topic, msg, required) do
+    case cast_general(msg, required) do
       {:ok, data} ->
         PubSub.broadcast(@pubsub, topic, {:invoice, event, data})
 

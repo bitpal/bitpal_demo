@@ -4,12 +4,13 @@ defmodule Demo.DonateLive do
   """
 
   use Demo, :live_view
+  import Ecto.Changeset
   alias BitPalPhx.Cache
+  alias BitPalPhx.ExchangeRate
   alias BitPalPhx.ExchangeRates
   alias BitPalPhx.Invoice
   alias BitPalPhx.Invoices
   require Logger
-  import Ecto.Changeset
 
   @pair {"BCH", "USD"}
 
@@ -20,21 +21,25 @@ defmodule Demo.DonateLive do
     {:ok,
      assign(socket,
        state: :setup,
-       exchange_rate: nil,
+       exchange_rate: ExchangeRates.historic_rate(@pair),
        form: form_changeset()
      )}
   end
 
   @impl true
   def mount(_params, _session, socket) do
-    if connected?(socket) do
-      ExchangeRates.subscribe(@pair)
-    end
+    ref =
+      if connected?(socket) do
+        ExchangeRates.request(@pair)
+      else
+        nil
+      end
 
     {:ok,
      assign(socket,
        state: :setup,
-       exchange_rate: nil,
+       exchange_rate: ExchangeRates.historic_rate(@pair),
+       ref: ref,
        form: form_changeset()
      )}
   end
@@ -123,9 +128,8 @@ defmodule Demo.DonateLive do
   end
 
   @impl true
-  def handle_info({:exchange_rate, rate}, socket) do
+  def handle_info({:exchange_rate, rate = %ExchangeRate{}}, socket) do
     # We only update our exchange rate once, so it doesn't change during a connection.
-    ExchangeRates.unsubscribe(rate.pair)
     {:noreply, assign(socket, exchange_rate: rate)}
   end
 
@@ -165,14 +169,15 @@ defmodule Demo.DonateLive do
   defp register_params(form, socket) do
     case form_changeset(form) |> apply_action(:setup) do
       {:ok, params} ->
+        # If we haven't received an exchange rate, block until we have one.
+        exchange_rate =
+          socket.assigns[:exchange_rate] ||
+            ExchangeRates.await_request!(socket.assigns.ref, @pair)
+
         params =
           params
           |> Map.update!(:amount, &Money.parse!(&1, :BCH))
-          |> Map.put(
-            :exchange_rate,
-            # If we haven't received an exchange rate, block until we have one.
-            socket.assigns[:exchange_rate] || ExchangeRates.request!(@pair)
-          )
+          |> Map.put(:exchange_rate, exchange_rate)
 
         {:ok, params}
 

@@ -1,5 +1,13 @@
 import Config
 
+token = "SFMyNTY.g2gDYQFuBgDWhevRegFiAAFRgA.fuiV-GbJoBUmKaSS5PW776HyeFh30-L9pgvn7wuQWKk"
+
+config :demo,
+  access_token: token,
+  server_endpoint: "http://0.0.0.0:4001"
+
+config :demo, BitPalPhx.SocketImpl, uri: "ws://0.0.0.0:4001/socket/websocket?token=#{token}"
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

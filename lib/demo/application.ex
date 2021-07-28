@@ -6,21 +6,35 @@ defmodule Demo.Application do
   use Application
 
   def start(_type, _args) do
-    socket_opts = [
-      url: "ws://0.0.0.0:4001/socket/websocket"
-    ]
-
-    children = [
-      {PhoenixClient.Socket, {socket_opts, name: BitPalPhx.Socket}},
-      BitPalPhx.Cache,
-      BitPalPhx.ExchangeRates,
-      BitPalPhx.Invoices,
-      Demo.Endpoint,
-      {Phoenix.PubSub, name: Demo.PubSub}
-    ]
+    children =
+      [
+        BitPalPhx.ProcessRegistry,
+        {Task.Supervisor, name: BitPalPhx.TaskSupervisor},
+        BitPalPhx.Cache,
+        BitPalPhx.Invoices,
+        Demo.Endpoint,
+        {Phoenix.PubSub, name: Demo.PubSub}
+      ] ++ socket()
 
     opts = [strategy: :one_for_one, name: Demo.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp socket do
+    # For testing we can turn off starting the socket
+    if start_socket?() do
+      [BitPalPhx.Socket]
+    else
+      []
+    end
+  end
+
+  defp start_socket? do
+    if settings = Application.get_env(:demo, BitPalPhx.Socket) do
+      Keyword.get(settings, :start_link, true)
+    else
+      true
+    end
   end
 
   # Tell Phoenix to update the endpoint configuration
