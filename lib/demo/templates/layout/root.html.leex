@@ -1,6 +1,5 @@
-<% src = "https://github.com/bitpal/bitpal_umbrella" %>
-<% demo_src = "https://github.com/bitpal/bitpal_umbrella/blob/master/apps/demo/lib/demo/live/donate_live.ex" %>
-<% live_view = "https://github.com/phoenixframework/phoenix_live_view" %>
+<% src = "https://github.com/bitpal/bitpal" %>
+<% demo_src = "https://github.com/bitpal/bitpal_demo" %>
 <% flowee = "https://gitlab.com/FloweeTheHub" %>
 <!DOCTYPE html>
 <html lang="en">
@@ -29,8 +28,7 @@
         <section>
           <h1>What's this?</h1>
 
-          <p>This is a website that accepts Bitcoin Cash using the <a href="https://github.com/bitpal/bitpal_umbrella/tree/master/apps/payments">BitPal Elixir library</a>. It demonstrates the user experience a customer to an e-commerce store might have and acts as a reference for how to use the library.</p>
-
+          <p>This is a website that accepts Bitcoin Cash using <a href="https://github.com/bitpal/bitpal">BitPal</a>. It demonstrates the user experience a customer to an e-commerce store might have and acts as a reference for how to interface with the server.</p>
         </section>
       </div>
 
@@ -53,23 +51,9 @@
         <section>
           <h1>How does it look like?</h1>
 
-          <% {code, line_count} = highlighted_code("donate_live.ex") %>
-
           <p>
-            The payment library doesn't handle markup for you, but together with <%= link("Phoenix LiveView", to: live_view) %> the core logic of the site is only <%= line_count %> lines, which also gives you a responsive web page with live form validation, fiat conversion and transitions between the different payment states.
+          The code for both <%=link("BitPal", to: src) %> and <%=link("this demo", to: demo_src)%> are open source.
           </p>
-
-          <p>
-          This is the <%= link("code of this page", to: demo_src) %> excluding it's markup:
-          </p>
-
-          <div class="code-wrapper">
-            <%= raw(code) %>
-          </div>
-
-          <style type=text/css>
-            <%= raw(code_stylesheet()) %>
-          </style>
         </section>
       </div>
     </footer>
