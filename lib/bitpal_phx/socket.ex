@@ -93,16 +93,15 @@ defmodule BitPalPhx.SocketImpl do
 
   @impl Slipstream
   def init(_args) do
-    config = Application.fetch_env!(:demo, __MODULE__)
-    socket = new_socket() |> assign(:connect_config, config)
-    {:ok, socket, {:continue, :connect}}
+    {:ok, new_socket(), {:continue, :connect}}
   end
 
   @impl Slipstream
   def handle_continue(:connect, socket) do
-    config = socket.assigns.connect_config
+    endpoint = Application.fetch_env!(:demo, :websocket_endpoint)
+    token = Application.fetch_env!(:demo, :access_token)
 
-    socket = connect!(socket, config)
+    socket = connect!(socket, uri: endpoint, headers: [{"x-access-token", token}])
     socket = await_connect!(socket)
     {:noreply, socket}
   end
