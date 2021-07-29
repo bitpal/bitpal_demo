@@ -14,8 +14,9 @@ defmodule BitPalPhx.Invoices do
   # Requests
 
   @spec fetch(String.t()) :: {:ok, Invoice.t()} | {:error, Changeset.t()}
-  def fetch(_key) do
-    {:error, %Changeset{}}
+  def fetch(id) do
+    uri = Application.fetch_env!(:demo, :rest_endpoint)
+    get("#{uri}/v1/invoices/#{id}")
   end
 
   @spec create(
@@ -34,35 +35,53 @@ defmodule BitPalPhx.Invoices do
         },
         opts \\ []
       ) do
-    finalize = Keyword.get(opts, :finalize, false)
-
-    http = Application.get_env(:demo, :http_client)
-    token = Application.fetch_env!(:demo, :access_token)
     uri = Application.fetch_env!(:demo, :rest_endpoint)
 
-    %{body: body, status_code: status_code} =
-      http.post!(
-        "#{uri}/v1/invoices",
-        encode!(%{
-          amount: Money.to_decimal(amount),
-          currency: currency,
-          exchange_rate: rate,
-          fiat_currency: fiat_currency,
-          required_confirmations: Application.get_env(:demo, :required_confirmations, 0),
-          email: params[:email],
-          finalize: finalize
-        }),
-        [
-          {"content-type", "application/json"},
-          {"Authorization", Plug.BasicAuth.encode_basic_auth(token, "")}
-        ]
-      )
+    post(
+      "#{uri}/v1/invoices",
+      %{
+        amount: Money.to_decimal(amount),
+        currency: currency,
+        exchange_rate: rate,
+        fiat_currency: fiat_currency,
+        required_confirmations: Application.get_env(:demo, :required_confirmations, 0),
+        email: params[:email],
+        finalize: Keyword.get(opts, :finalize, false)
+      }
+    )
+  end
 
+  defp get(uri) do
+    http = Application.get_env(:demo, :http_client)
+
+    uri
+    |> http.get!(headers())
+    |> handle_response()
+  end
+
+  defp post(uri, params) do
+    http = Application.get_env(:demo, :http_client)
+
+    uri
+    |> http.post!(encode!(params), headers())
+    |> handle_response()
+  end
+
+  defp handle_response(%{body: body, status_code: status_code}) do
     if status_code == 200 do
       decode_invoice(body)
     else
       {:error, decode_error(body)}
     end
+  end
+
+  defp headers do
+    token = Application.fetch_env!(:demo, :access_token)
+
+    [
+      {"content-type", "application/json"},
+      {"Authorization", Plug.BasicAuth.encode_basic_auth(token, "")}
+    ]
   end
 
   # Events
