@@ -70,7 +70,10 @@ defmodule Demo.DonateLive do
 
             {:noreply, socket}
 
-          {:error, changeset} ->
+          {:error, error} ->
+            Logger.warn("error received: #{inspect(error)}")
+            changeset = %{form_changeset(form) | action: :server_error}
+
             {:noreply, assign(socket, form: changeset)}
         end
 

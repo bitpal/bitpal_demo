@@ -5,6 +5,11 @@
       <p>Something's wrong! Please check the errors below.</p>
     </div>
   <% end %>
+  <%= if @form.action == :server_error do %>
+    <div class="alert alert-danger">
+      <p>Internal server error.</p>
+    </div>
+  <% end %>
     <div class="amount">
       <div class="fiat">
         <%= error_tag f, :amount %>

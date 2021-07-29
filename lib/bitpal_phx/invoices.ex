@@ -28,10 +28,9 @@ defmodule BitPalPhx.Invoices do
           keyword
         ) :: {:ok, Invoice.t()} | {:error, Changeset.t()}
   def create(
-        %{
+        params = %{
           amount: amount,
-          exchange_rate: %{rate: rate, pair: {currency, fiat_currency}},
-          email: email
+          exchange_rate: %{rate: rate, pair: {currency, fiat_currency}}
         },
         opts \\ []
       ) do
@@ -50,7 +49,7 @@ defmodule BitPalPhx.Invoices do
           exchange_rate: rate,
           fiat_currency: fiat_currency,
           required_confirmations: Application.get_env(:demo, :required_confirmations, 0),
-          email: email,
+          email: params[:email],
           finalize: finalize
         }),
         [
@@ -62,7 +61,7 @@ defmodule BitPalPhx.Invoices do
     if status_code == 200 do
       decode_invoice(body)
     else
-      {:error, error_changeset(body)}
+      {:error, decode_error(body)}
     end
   end
 
@@ -180,7 +179,14 @@ defmodule BitPalPhx.Invoices do
     |> apply_action(:cast)
   end
 
-  defp error_changeset(_body) do
-    %Changeset{}
+  defp decode_error(body) do
+    case Poison.decode(body) do
+      {:ok, decoded} ->
+        decoded
+
+      error ->
+        Logger.warn("couldn't decode response: #{inspect(body)} #{inspect(error)}")
+        body
+    end
   end
 end
