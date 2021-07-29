@@ -13,6 +13,7 @@ defmodule Demo.Router do
   scope "/", Demo do
     pipe_through :browser
 
-    live "/", PaymentLive, :index
+    live "/", DonateLive, :setup
+    live "/invoice/:id", DonateLive, :invoice
   end
 end

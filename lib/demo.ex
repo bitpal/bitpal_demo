@@ -91,8 +91,7 @@ defmodule Demo do
       import Demo.Gettext
       alias Demo.Router.Helpers, as: Routes
 
-      import BitPal.ViewHelpers
-      alias BitPal.Invoices
+      import BitPalPhx.ViewHelpers
 
       use PhoenixInlineSvg.Helpers
     end
