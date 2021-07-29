@@ -98,10 +98,11 @@ defmodule BitPalPhx.SocketImpl do
 
   @impl Slipstream
   def handle_continue(:connect, socket) do
-    endpoint = Application.fetch_env!(:demo, :websocket_endpoint)
+    server = Application.fetch_env!(:demo, :server_uri)
+    uri = "ws://#{server}/socket/websocket"
     token = Application.fetch_env!(:demo, :access_token)
 
-    socket = connect!(socket, uri: endpoint, headers: [{"x-access-token", token}])
+    socket = connect!(socket, uri: uri, headers: [{"x-access-token", token}])
     socket = await_connect!(socket)
     {:noreply, socket}
   end

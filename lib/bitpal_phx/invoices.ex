@@ -15,8 +15,7 @@ defmodule BitPalPhx.Invoices do
 
   @spec fetch(String.t()) :: {:ok, Invoice.t()} | {:error, Changeset.t()}
   def fetch(id) do
-    uri = Application.fetch_env!(:demo, :rest_endpoint)
-    get("#{uri}/v1/invoices/#{id}")
+    get("#{api_uri()}/v1/invoices/#{id}")
   end
 
   @spec create(
@@ -35,10 +34,8 @@ defmodule BitPalPhx.Invoices do
         },
         opts \\ []
       ) do
-    uri = Application.fetch_env!(:demo, :rest_endpoint)
-
     post(
-      "#{uri}/v1/invoices",
+      "#{api_uri()}/v1/invoices",
       %{
         amount: Money.to_decimal(amount),
         currency: currency,
@@ -82,6 +79,19 @@ defmodule BitPalPhx.Invoices do
       {"content-type", "application/json"},
       {"Authorization", Plug.BasicAuth.encode_basic_auth(token, "")}
     ]
+  end
+
+  defp api_uri do
+    server = Application.fetch_env!(:demo, :server_uri)
+
+    scheme =
+      if Application.get_env(:demo, :api_https, true) do
+        "https"
+      else
+        "http"
+      end
+
+    "#{scheme}://#{server}"
   end
 
   # Events
