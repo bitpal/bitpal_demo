@@ -98,7 +98,7 @@ defmodule Demo.DonateLiveTest do
 
     assert render_eventually(view, "Your payment of <b>#{amount} BCH</b> has been completed!")
     assert render(view) =~ "A verification email has been sent to <b>test@bitpal.dev</b>"
-
+    Process.sleep(10)
     assert_email_sent()
   end
 
