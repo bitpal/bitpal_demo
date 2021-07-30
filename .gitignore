@@ -33,4 +33,8 @@ npm-debug.log
 # this depending on your deployment strategy.
 /priv/static/
 
+# Elixir language server files
 .elixir_ls
+
+# Ignore dev secrets file
+secrets.fish

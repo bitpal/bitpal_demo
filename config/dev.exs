@@ -1,11 +1,10 @@
 import Config
 
-server = "0.0.0.0:4001"
-
 config :demo,
   access_token: "SFMyNTY.g2gDYQFuBgDWhevRegFiAAFRgA.fuiV-GbJoBUmKaSS5PW776HyeFh30-L9pgvn7wuQWKk",
-  rest_endpoint: "http://#{server}",
-  websocket_endpoint: "ws://#{server}/socket/websocket"
+  server_uri: "0.0.0.0:4001",
+  # We can ignore https during development
+  api_https: false
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

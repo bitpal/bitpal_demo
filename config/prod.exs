@@ -7,7 +7,7 @@ import Config
 # before starting your production server.
 config :demo, Demo.Endpoint,
   url: [host: "demo.bitpal.dev", port: 443],
-  http: [:inet6, port: 4040],
+  http: [:inet6, port: 4400],
   check_origin: ["https://demo.bitpal.dev/"],
   server: true,
   cache_static_manifest: "priv/static/cache_manifest.json"
